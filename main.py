@@ -5,27 +5,96 @@ import sys
 import socket
 import netifaces
 import platform
+import phonenumbers
+import webbrowser
+import requests
 #from imports
 from scapy.all import ARP, Ether, srp
 from datetime import date
 from colorama import Fore
+from phonenumbers import geocoder, carrier, timezone
+from ip2geotools.databases.noncommercial import DbIpCity
 
 #ART AND TITLE SCREENS===================================================================
 help = """
+phonecheck: does basic OSINT for pn
 help: shows this screen
 clear: clears the screen
 exit: exits
-get local ip: shows you your ip address on local network
-network scan: runs a network scan, dosent work on secure networks
+getlocalip: shows you your ip address on local network
+networkscan: runs a network scan, dosent work on secure networks
 ping: checks to see if IP is up
-default gateway: shows you default gateway IP
+default: shows you default gateway IP
 library: takes to the notes created by the script
+drillbit: finds address from name and city
+"""
+titlescreen = """
+================================
+
+                        )
+                       (
+           _ ___________ )
+    THC   [_[___________#
+
+================================
 """
 
-
+print(Fore.LIGHTRED_EX+titlescreen)
+print("Loading...")
+time.sleep(1)
 
 
 #FUNCTIONS================================================================================
+#ip geolocator
+def get_location():
+    ip_address = input("Victim IP address: ")
+    response = requests.get(f'https://ipapi.co/{ip_address}/json/').json()
+    location_data = {
+        "ip": ip_address,
+        "city": response.get("city"),
+        "region": response.get("region"),
+        "country": response.get("country_name")
+    }
+    print(location_data)
+    start()
+
+
+#name to location
+def drillbit():
+    first_name = input("First name: ")
+    last_name = input("last name: ")
+    state = input("State abbreviated: ")
+    city = input("City: ")
+    city = city.replace(' ','-')
+    webbrowser.open("https://www.beenverified.com/people/"+first_name+"-"+last_name+"/"+state+"/"+city)
+    start()
+
+#phone osint
+def phonecheck(pn):
+    print("checking phone number")
+    z = phonenumbers.parse(pn, None)
+    print(z)
+    real_number = phonenumbers.is_possible_number(z)
+    if real_number == True:
+        print("Number has NPA 200, aka Real number")
+    else:
+        print("NPA not found, not real number")
+    location = geocoder.description_for_number(z, "en")
+    print("Location: "+location)
+    ro_number = phonenumbers.parse(pn, "RO")
+    OGcarrier = carrier.name_for_number(ro_number, "en")
+    print("Original carrier: "+OGcarrier)
+    gb_number = phonenumbers.parse(pn, "GB")
+    time_zone = timezone.time_zones_for_number(gb_number)
+    print("Timezone: "+str(time_zone))
+    print("==============================================")
+    print("open OSINT websites for phone numbers?")
+    osintpn = input("Y or N: ")
+    if osintpn == "y":
+        webbrowser.open("https://www.usphonebook.com/")
+        webbrowser.open("https://www.truepeoplesearch.com/")
+    start()
+
 #default gateway finder
 def default_gateway():
     gateways = netifaces.gateways()
@@ -139,10 +208,10 @@ def library():
 
 #start==========================================================================================
 def start():
-    print(Fore.CYAN+"==============================================")
-    print(Fore.LIGHTRED_EX+"THC, Titus' Hacking Counterpart. Also Weed lol.")
-    print(Fore.CYAN+"==============================================")
-    user_in = input(Fore.WHITE+"Input: ")
+    print(Fore.LIGHTCYAN_EX+"==============================================")
+    print(Fore.LIGHTRED_EX+"THC ver 420, Lets fucking goooooooooooo")
+    print(Fore.LIGHTCYAN_EX+"==============================================")
+    user_in = input(Fore.LIGHTWHITE_EX+"Input: ")
     #to library
     if user_in == "library":
         library()
@@ -153,14 +222,14 @@ def start():
     elif user_in == "exit":
         sys.exit()
     #to run network scan
-    elif user_in == "network scan":
+    elif user_in == "networkscan":
         network_scan()
     #to clear screen
     elif user_in == "clear":
         os.system("cls")
         start()
     #to get local ip
-    elif user_in == "get local ip":
+    elif user_in == "getlocalip":
         local_ip = get_local_ip()
         print(local_ip)
         start()
@@ -169,8 +238,15 @@ def start():
         print(help)
         start()
     #to find gateway
-    elif user_in == "default gateway":
+    elif user_in == "default":
         default_gateway()
+    elif user_in == "phonecheck":
+        pn = input("Phone number to search with country code: ")
+        phonecheck(pn)
+    elif user_in == "drillbit":
+        drillbit()
+    elif user_in == "iptracker":
+        get_location()
     else:
         print("Invalid command")
         time.sleep(1)
