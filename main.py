@@ -7,6 +7,7 @@ import netifaces
 import platform
 import phonenumbers
 import webbrowser
+import threading
 import requests
 #from imports
 from scapy.all import ARP, Ether, srp
@@ -27,6 +28,8 @@ ping: checks to see if IP is up
 default: shows you default gateway IP
 library: takes to the notes created by the script
 drillbit: finds address from name and city
+iptracker: tracks and geolocates IP address
+portscan: opens basic port scanner
 """
 titlescreen = """
 ================================
@@ -38,13 +41,53 @@ titlescreen = """
 
 ================================
 """
-
+os.system('cls')
 print(Fore.LIGHTRED_EX+titlescreen)
 print("Loading...")
 time.sleep(1)
 
 
 #FUNCTIONS================================================================================
+
+#tcp connect for port scanner
+def TCP_connect(ip, port_number, delay, output):
+    TCPsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    TCPsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    TCPsock.settimeout(delay)
+    try:
+        TCPsock.connect((ip, port_number))
+        output[port_number] = 'Listening'
+    except:
+        output[port_number] = ''
+
+
+#port scanner
+def scan_ports():
+    host_ip = input("Enter IP to scan: ")
+    print("Scanning...")
+    delay = 2
+    threads = []        # To run TCP_connect concurrently
+    output = {}         # For printing purposes
+
+    # Spawning threads to scan ports
+    for i in range(10000):
+        t = threading.Thread(target=TCP_connect, args=(host_ip, i, delay, output))
+        threads.append(t)
+
+    # Starting threads
+    for i in range(10000):
+        threads[i].start()
+
+    # Locking the main thread until all threads complete
+    for i in range(10000):
+        threads[i].join()
+
+    # Printing listening ports from small to large
+    for i in range(10000):
+        if output[i] == 'Listening':
+            print(str(i) + ': ' + output[i])
+    start()
+
 #ip geolocator
 def get_location():
     ip_address = input("Victim IP address: ")
@@ -72,7 +115,12 @@ def drillbit():
 #phone osint
 def phonecheck(pn):
     print("checking phone number")
-    z = phonenumbers.parse(pn, None)
+    try:
+        z = phonenumbers.parse(pn, None)
+    except:
+        print("Please add country code, ex: +1")
+        time.sleep(2)
+        start()
     print(z)
     real_number = phonenumbers.is_possible_number(z)
     if real_number == True:
@@ -196,6 +244,12 @@ def library():
         f.close
         library()
     if library_in == "3":
+        path = os.getcwd()
+        dir_list = os.listdir(path)
+        # prints all files
+        print("------------------")
+        print(dir_list)
+        print("------------------")
         file_to_read = input("File to read: ")
         if os.path.exists(file_to_read) == True:
             with open(file_to_read, 'r') as f:
@@ -247,6 +301,8 @@ def start():
         drillbit()
     elif user_in == "iptracker":
         get_location()
+    elif user_in == "portscan":
+        scan_ports()
     else:
         print("Invalid command")
         time.sleep(1)
