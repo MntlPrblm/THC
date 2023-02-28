@@ -30,6 +30,7 @@ library: takes to the notes created by the script
 drillbit: finds address from name and city
 iptracker: tracks and geolocates IP address
 portscan: opens basic port scanner
+webcheck: pings url instead of IP address
 """
 titlescreen = """
 ================================
@@ -48,6 +49,18 @@ time.sleep(1)
 
 
 #FUNCTIONS================================================================================
+#check https: website
+def websitecheck():
+    website = input("Website: ")
+    print("checking website")
+    try:
+        response = requests.get(website)
+        print(response)
+        print("website is up")
+    except:
+        print("website is down")
+    start()
+
 
 #tcp connect for port scanner
 def TCP_connect(ip, port_number, delay, output):
@@ -303,6 +316,8 @@ def start():
         get_location()
     elif user_in == "portscan":
         scan_ports()
+    elif user_in == "webcheck":
+        websitecheck()
     else:
         print("Invalid command")
         time.sleep(1)
